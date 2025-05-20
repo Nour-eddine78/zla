@@ -10,17 +10,22 @@ import {
   type Document,
   type InsertDocument,
   type Activity,
-  type InsertActivity
+  type InsertActivity,
+  type ConnectionLog,
+  type InsertConnectionLog
 } from "@shared/schema";
 
 // modify the interface with any CRUD methods
 // you might need
 export interface IStorage {
   // Users
+  getUsers(): Promise<User[]>;
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   updateUserLastLogin(id: number): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   
   // Machines
   getMachines(): Promise<Machine[]>;
@@ -48,9 +53,16 @@ export interface IStorage {
   getDocument(id: number): Promise<Document | undefined>;
   createDocument(document: InsertDocument): Promise<Document>;
   
-  // Activities
+  // Activities - User actions tracking
   getActivities(limit?: number): Promise<Activity[]>;
+  getActivitiesByUser(userId: number, limit?: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  
+  // Connection logs - User connections tracking
+  getConnectionLogs(limit?: number): Promise<ConnectionLog[]>;
+  getConnectionLogsByUser(userId: number, limit?: number): Promise<ConnectionLog[]>;
+  createConnectionLog(log: InsertConnectionLog): Promise<ConnectionLog>;
+  updateConnectionLogOnLogout(userId: number): Promise<ConnectionLog | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -60,6 +72,7 @@ export class MemStorage implements IStorage {
   private safetyIncidents: Map<number, SafetyIncident>;
   private documents: Map<number, Document>;
   private activities: Map<number, Activity>;
+  private connectionLogs: Map<number, ConnectionLog>;
   
   private userIdCounter: number;
   private machineIdCounter: number;
@@ -67,6 +80,7 @@ export class MemStorage implements IStorage {
   private safetyIncidentIdCounter: number;
   private documentIdCounter: number;
   private activityIdCounter: number;
+  private connectionLogIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -75,6 +89,7 @@ export class MemStorage implements IStorage {
     this.safetyIncidents = new Map();
     this.documents = new Map();
     this.activities = new Map();
+    this.connectionLogs = new Map();
     
     this.userIdCounter = 1;
     this.machineIdCounter = 1;
@@ -82,6 +97,7 @@ export class MemStorage implements IStorage {
     this.safetyIncidentIdCounter = 1;
     this.documentIdCounter = 1;
     this.activityIdCounter = 1;
+    this.connectionLogIdCounter = 1;
     
     // Initialize with default admin user
     this.createUser({
@@ -183,6 +199,10 @@ export class MemStorage implements IStorage {
   }
 
   // User methods
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+  
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -195,9 +215,49 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id, lastLogin: null };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      lastLogin: null,
+      role: insertUser.role || 'supervisor' // Ensure role is set with default
+    };
     this.users.set(id, user);
+    
+    // Create activity for user creation
+    this.createActivity({
+      type: "user_created",
+      description: `Nouvel utilisateur créé: ${insertUser.username} (${insertUser.role})`,
+      userId: 1, // Admin ID typically
+      relatedEntityId: id,
+      relatedEntityType: "user"
+    });
+    
     return user;
+  }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = {
+      ...user,
+      ...userData,
+      // Ensure these fields can't be updated inappropriately
+      id: user.id,
+    };
+    
+    this.users.set(id, updatedUser);
+    
+    // Create activity for user update
+    this.createActivity({
+      type: "user_updated",
+      description: `Utilisateur ${user.username} mis à jour`,
+      userId: 1, // Admin ID typically
+      relatedEntityId: id,
+      relatedEntityType: "user"
+    });
+    
+    return updatedUser;
   }
   
   async updateUserLastLogin(id: number): Promise<User | undefined> {
@@ -211,6 +271,34 @@ export class MemStorage implements IStorage {
     
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    // Cannot delete if it's the last admin
+    const user = this.users.get(id);
+    if (!user) return false;
+    
+    if (user.role === 'admin') {
+      const admins = Array.from(this.users.values()).filter(u => u.role === 'admin');
+      if (admins.length <= 1) {
+        return false; // Can't delete the last admin
+      }
+    }
+    
+    const deleted = this.users.delete(id);
+    
+    if (deleted) {
+      // Create activity for user deletion
+      this.createActivity({
+        type: "user_deleted",
+        description: `Utilisateur ${user.username} supprimé`,
+        userId: 1, // Admin ID typically
+        relatedEntityId: id,
+        relatedEntityType: "user"
+      });
+    }
+    
+    return deleted;
   }
   
   // Machine methods
@@ -365,7 +453,27 @@ export class MemStorage implements IStorage {
   // Activity methods
   async getActivities(limit?: number): Promise<Activity[]> {
     const activities = Array.from(this.activities.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => {
+        const bTime = b.timestamp ? b.timestamp.getTime() : 0;
+        const aTime = a.timestamp ? a.timestamp.getTime() : 0;
+        return bTime - aTime;
+      });
+    
+    if (limit) {
+      return activities.slice(0, limit);
+    }
+    
+    return activities;
+  }
+  
+  async getActivitiesByUser(userId: number, limit?: number): Promise<Activity[]> {
+    const activities = Array.from(this.activities.values())
+      .filter(activity => activity.userId === userId)
+      .sort((a, b) => {
+        const bTime = b.timestamp ? b.timestamp.getTime() : 0;
+        const aTime = a.timestamp ? a.timestamp.getTime() : 0;
+        return bTime - aTime;
+      });
     
     if (limit) {
       return activities.slice(0, limit);
@@ -379,10 +487,93 @@ export class MemStorage implements IStorage {
     const newActivity: Activity = { 
       ...activity, 
       id,
-      timestamp: new Date()
+      timestamp: new Date(),
+      relatedEntityId: activity.relatedEntityId || null,
+      relatedEntityType: activity.relatedEntityType || null,
+      ipAddress: activity.ipAddress || null,
+      actionStatus: activity.actionStatus || 'success'
     };
     this.activities.set(id, newActivity);
     return newActivity;
+  }
+  
+  // Connection logs methods
+  async getConnectionLogs(limit?: number): Promise<ConnectionLog[]> {
+    const logs = Array.from(this.connectionLogs.values())
+      .sort((a, b) => {
+        const bTime = b.timestamp ? b.timestamp.getTime() : 0;
+        const aTime = a.timestamp ? a.timestamp.getTime() : 0;
+        return bTime - aTime;
+      });
+    
+    if (limit) {
+      return logs.slice(0, limit);
+    }
+    
+    return logs;
+  }
+  
+  async getConnectionLogsByUser(userId: number, limit?: number): Promise<ConnectionLog[]> {
+    const logs = Array.from(this.connectionLogs.values())
+      .filter(log => log.userId === userId)
+      .sort((a, b) => {
+        const bTime = b.timestamp ? b.timestamp.getTime() : 0;
+        const aTime = a.timestamp ? a.timestamp.getTime() : 0;
+        return bTime - aTime;
+      });
+    
+    if (limit) {
+      return logs.slice(0, limit);
+    }
+    
+    return logs;
+  }
+  
+  async createConnectionLog(log: InsertConnectionLog): Promise<ConnectionLog> {
+    const id = this.connectionLogIdCounter++;
+    const newLog: ConnectionLog = { 
+      ...log, 
+      id,
+      timestamp: new Date(),
+      logoutTime: null,
+      sessionDuration: null
+    };
+    this.connectionLogs.set(id, newLog);
+    
+    // Update user last login
+    if (log.userId) {
+      this.updateUserLastLogin(log.userId);
+    }
+    
+    return newLog;
+  }
+  
+  async updateConnectionLogOnLogout(userId: number): Promise<ConnectionLog | undefined> {
+    // Find the most recent log for this user that doesn't have a logout time
+    const userLogs = Array.from(this.connectionLogs.values())
+      .filter(log => log.userId === userId && !log.logoutTime)
+      .sort((a, b) => {
+        const bTime = b.timestamp ? b.timestamp.getTime() : 0;
+        const aTime = a.timestamp ? a.timestamp.getTime() : 0;
+        return bTime - aTime;
+      });
+    
+    if (userLogs.length === 0) return undefined;
+    
+    const lastLog = userLogs[0];
+    const now = new Date();
+    const sessionDuration = lastLog.timestamp 
+      ? Math.floor((now.getTime() - lastLog.timestamp.getTime()) / 1000) 
+      : 0;
+    
+    const updatedLog = {
+      ...lastLog,
+      logoutTime: now,
+      sessionDuration
+    };
+    
+    this.connectionLogs.set(lastLog.id, updatedLog);
+    return updatedLog;
   }
 }
 

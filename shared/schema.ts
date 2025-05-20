@@ -112,7 +112,7 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   id: true,
 });
 
-// Activities
+// Activities - Track user actions
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
   type: text("type").notNull(),
@@ -121,11 +121,32 @@ export const activities = pgTable("activities", {
   timestamp: timestamp("timestamp").defaultNow(),
   relatedEntityId: integer("related_entity_id"),
   relatedEntityType: text("related_entity_type"),
+  ipAddress: text("ip_address"),
+  actionStatus: text("action_status").default('success'),
 });
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
   id: true,
   timestamp: true,
+});
+
+// Connection logs - Track user connections
+export const connectionLogs = pgTable("connection_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  status: text("status").notNull().default('success'),
+  logoutTime: timestamp("logout_time"),
+  sessionDuration: integer("session_duration"),
+});
+
+export const insertConnectionLogSchema = createInsertSchema(connectionLogs).omit({
+  id: true,
+  timestamp: true,
+  logoutTime: true,
+  sessionDuration: true,
 });
 
 // Types
@@ -146,3 +167,6 @@ export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+export type ConnectionLog = typeof connectionLogs.$inferSelect;
+export type InsertConnectionLog = z.infer<typeof insertConnectionLogSchema>;
