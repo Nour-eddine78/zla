@@ -49,7 +49,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -184,9 +184,14 @@ export default function UserManagement() {
   // Mutations
   const createUserMutation = useMutation({
     mutationFn: async (data: CreateUserFormValues) => {
-      return await apiRequest("/api/users", {
+      return await fetch("/api/users", {
         method: "POST",
-        body: JSON.stringify(data)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      }).then(res => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
       });
     },
     onSuccess: () => {
@@ -211,9 +216,14 @@ export default function UserManagement() {
 
   const updateUserMutation = useMutation({
     mutationFn: async (data: { id: number; userData: Partial<EditUserFormValues> }) => {
-      return await apiRequest(`/api/users/${data.id}`, {
+      return await fetch(`/api/users/${data.id}`, {
         method: "PATCH",
-        body: JSON.stringify(data.userData)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.userData),
+        credentials: "include",
+      }).then(res => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
       });
     },
     onSuccess: () => {
@@ -238,8 +248,12 @@ export default function UserManagement() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/users/${id}`, {
-        method: "DELETE"
+      return await fetch(`/api/users/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      }).then(res => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
       });
     },
     onSuccess: () => {

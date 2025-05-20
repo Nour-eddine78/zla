@@ -11,7 +11,9 @@ import {
   Map, 
   Activity, 
   AlertTriangle,
-  FileText
+  FileText, 
+  Users,
+  Settings
 } from "lucide-react";
 
 type SidebarProps = {
@@ -24,73 +26,100 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const { user } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
-  const sidebarItems = [
-    {
-      title: "Accueil",
-      href: "/",
-      icon: Home,
-    },
-    {
-      title: "Suivi des Opérations",
-      href: "/operations",
-      icon: ClipboardList,
-      subItems: [
-        { title: "Liste des Opérations", href: "/operations" },
-        { title: "Nouvelle Opération", href: "/operations-form" },
-        { title: "Historique", href: "/operations/history" }
-      ]
-    },
-    {
-      title: "Tableau de Bord",
-      href: "/dashboard",
-      icon: BarChart2,
-      subItems: [
-        { title: "Vue Générale", href: "/dashboard" },
-        { title: "Statistiques", href: "/dashboard/stats" },
-        { title: "Rapports", href: "/dashboard/reports" }
-      ]
-    },
-    {
-      title: "Avancement",
-      href: "/advancement",
-      icon: Map,
-      subItems: [
-        { title: "Par Panneau", href: "/advancement/panel" },
-        { title: "Par Niveau", href: "/advancement/level" },
-        { title: "Planification", href: "/advancement/planning" }
-      ]
-    },
-    {
-      title: "Performances",
-      href: "/performance",
-      icon: Activity,
-      subItems: [
-        { title: "Machines", href: "/performance/machines" },
-        { title: "Opérateurs", href: "/performance/operators" },
-        { title: "Méthodes", href: "/performance/methods" }
-      ]
-    },
-    {
-      title: "Sécurité",
-      href: "/safety",
-      icon: AlertTriangle,
-      subItems: [
-        { title: "Incidents", href: "/safety" },
-        { title: "Rapports HSE", href: "/safety/reports" },
-        { title: "Procédures", href: "/safety/procedures" }
-      ]
-    },
-    {
-      title: "Documentation",
-      href: "/documentation",
-      icon: ClipboardList,
-      subItems: [
-        { title: "Machines", href: "/documentation/machines" },
-        { title: "Méthodes", href: "/documentation/methods" },
-        { title: "Fiches Techniques", href: "/documentation/technical" }
-      ]
-    },
-  ];
+  // Créer les éléments de la barre latérale en fonction du rôle de l'utilisateur
+  const createSidebarItems = () => {
+    const items = [
+      {
+        title: "Accueil",
+        href: "/",
+        icon: Home,
+      },
+      {
+        title: "Suivi des Opérations",
+        href: "/operations",
+        icon: ClipboardList,
+        subItems: [
+          { title: "Liste des Opérations", href: "/operations" },
+          { title: "Nouvelle Opération", href: "/operations/new" },
+          { title: "Historique", href: "/operations/history" }
+        ]
+      },
+      {
+        title: "Tableau de Bord",
+        href: "/dashboard",
+        icon: BarChart2,
+        subItems: [
+          { title: "Vue Générale", href: "/dashboard" },
+          { title: "Statistiques", href: "/dashboard/stats" },
+          { title: "Rapports", href: "/dashboard/reports" }
+        ]
+      },
+      {
+        title: "Avancement",
+        href: "/advancement",
+        icon: Map,
+        subItems: [
+          { title: "Par Panneau", href: "/advancement/panel" },
+          { title: "Par Niveau", href: "/advancement/level" },
+          { title: "Planification", href: "/advancement/planning" }
+        ]
+      },
+      {
+        title: "Performances",
+        href: "/performance",
+        icon: Activity,
+        subItems: [
+          { title: "Machines", href: "/performance/machines" },
+          { title: "Opérateurs", href: "/performance/operators" },
+          { title: "Méthodes", href: "/performance/methods" }
+        ]
+      },
+      {
+        title: "Sécurité",
+        href: "/safety",
+        icon: AlertTriangle,
+        subItems: [
+          { title: "Incidents", href: "/safety" },
+          { title: "Rapports HSE", href: "/safety/reports" },
+          { title: "Procédures", href: "/safety/procedures" }
+        ]
+      },
+      {
+        title: "Documentation",
+        href: "/documentation",
+        icon: FileText,
+        subItems: [
+          { title: "Machines", href: "/documentation/machines" },
+          { title: "Méthodes", href: "/documentation/methods" },
+          { title: "Fiches Techniques", href: "/documentation/technical" }
+        ]
+      },
+    ];
+    
+    // Ajouter les éléments réservés aux administrateurs
+    if (user?.role === 'admin') {
+      items.push({
+        title: "Gestion Utilisateurs",
+        href: "/user-management",
+        icon: Users,
+        subItems: [
+          { title: "Utilisateurs", href: "/user-management" },
+          { title: "Connexions", href: "/user-management?tab=connexions" },
+          { title: "Activités", href: "/user-management?tab=activites" }
+        ]
+      });
+      
+      items.push({
+        title: "Paramètres",
+        href: "/settings",
+        icon: Settings,
+      });
+    }
+    
+    return items;
+  };
+  
+  const sidebarItems = createSidebarItems();
   
   return (
     <div 
