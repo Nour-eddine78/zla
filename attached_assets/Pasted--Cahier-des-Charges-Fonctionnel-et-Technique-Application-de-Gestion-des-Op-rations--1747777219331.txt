@@ -1,0 +1,352 @@
+# 📘 **Cahier des Charges Fonctionnel et Technique** 
+
+### *Application de Gestion des Opérations de Décapage*
+
+**Client :** OCP – Office Chérifien des Phosphates
+**Version :** 1.0 – 2025
+**Rédigé par :** Équipe SI – Transformation Digitale Mines
+**Technologies Recommandées :** Express.js · React.js · Tailwind CSS · MySQL · JWT
+
+---
+
+## **1. Contexte et Enjeux**
+
+Dans un souci d’optimisation de ses opérations minières, l’OCP entreprend la mise en place d’une solution digitale robuste dédiée à la gestion des activités de décapage. Cette application vise à structurer, automatiser et centraliser l’ensemble des processus opérationnels, techniques et sécuritaires liés aux méthodes de décapage en amont des opérations de sautage.
+
+---
+
+## **2. Objectifs Stratégiques**
+
+* Digitalisation complète des opérations de terrain
+* Fiabilisation et traçabilité des données machines et opérateurs
+* Pilotage intelligent des performances en temps réel
+* Intégration fluide avec l'application de gestion du sautage
+* Mise en conformité avec les standards HSE et les directives internes de l’OCP
+* Renforcement de la transparence, de la réactivité et de l’efficience opérationnelle
+
+---
+
+## **3. Portée de l’Application**
+
+L’application couvre l’intégralité du périmètre suivant :
+
+* Méthodes de décapage : **Transport, Casement, Poussage**
+* Suivi des machines, opérateurs, et zones d’intervention
+* Indicateurs de rendement, disponibilité, avancement
+* Suivi de la sécurité opérationnelle
+* Archivage, statistiques et exportation de rapports
+* Connexion avec le système de sautage pour synchronisation des séquences
+
+---
+
+## **4. Architecture Fonctionnelle(Les **modules à implémenter intégralement**)**
+
+### **4.1. Accueil**
+
+* Affichage d’images des machines utilisées dans les opérations de décapage.
+* Présentation des fiches techniques des machines, incluant les spécifications et les performances.
+* Accès à des documents PDF concernant les machines et les procédures de décapage.
+
+---
+
+### **4.2. Suivi des Opérations**
+
+#### **4.2.1. Formulaire Contextuel Intelligent**
+
+| **Champs**          | **Description**                                           |
+| ------------------- | --------------------------------------------------------- |
+| **ID de la fiche**  | Identifiant unique (auto-généré, lecture seule)           |
+| Date d’intervention | Calendrier sélectionnable                                 |
+| Méthode de décapage | Transport / Poussage / Casement                           |
+| Machine             | Liste filtrée dynamiquement selon la méthode choisie      |
+| Poste               | 1, 2 ou 3                                                 |
+| Panneau             | Zone géologique (saisie manuelle)                         |
+| Tranche             | Sous-zone géologique (saisie manuelle)                    |
+| Niveau              | Niveau géologique (saisie manuelle)                       |
+| État de la machine  | En marche / À l’arrêt                                     |
+| Heures de marche    | Nombre d’heures machine en marche (saisie ou calcul auto) |
+| Durée d’arrêt       | Temps machine arrêtée (saisie ou calcul auto)             |
+| Observation         | Champ texte libre pour remarques terrain                  |
+| Volume sauté (m³)   | Volume total sauté calculé ou saisi                       |
+| Clonage de fiche    | Option pour dupliquer les données d’une fiche antérieure  |
+
+#### **4.2.2. Champs Spécifiques selon la Méthode**
+
+| **Méthode** | **Champs Additionnels**                                   |
+| ----------- | --------------------------------------------------------- |
+| Transport   | Distance de décharge, Nombre de camions, Nombre de pelles |
+| Poussage    | Nombre de bulldozers D11, État des équipements            |
+| Casement    | Nombre d’engins, Type d’intervention                      |
+
+#### **4.2.3. Liste Dynamique des Machines**
+
+| **Méthode** | **Machines Disponibles**                 |
+| ----------- | ---------------------------------------- |
+| Poussage    | D11                                      |
+| Casement    | 750011, 750012, PH1, PH2, 200B1, Libhere |
+| Transport   | Transwine, Procaneq                      |
+
+---
+4.2.4 Barre de Recherche et Filtrage
+Barre de recherche globale sur machines, opérateurs, zones
+
+Filtres multi-critères (méthode, poste, état machine, date…)
+
+Mise à jour dynamique des listes et tableaux
+ 
+
+### **4.2.5. Calculs Automatisés et Rendement** 
+
+| **Indicateur**     | **Formule**                           |
+| ------------------ | ------------------------------------- |
+| Métrage décapé (m) | Profondeur × Nombre de trous          |
+| Rendement (m/h)    | Métrage / Heures de marche            |
+| Volume décapé (m³) | Longueur × Largeur × Profondeur       |
+| Disponibilité      | Heures de marche / Heures totales     |
+| Cycle de travail   | Intervalles de marche/arrêt par poste |
+
+---
+
+### **4.3. Visualisation et Tableaux de Bord**
+Objectifs : Offrir une interface de pilotage claire, interactive et personnalisable pour un suivi précis et en temps réel des opérations.
+
+Fonctionnalités clés :
+Graphiques dynamiques et interactifs
+
+Rendement global et par machine
+
+Avancement des travaux par zone, poste et méthode
+
+État et disponibilité des équipements
+
+Indicateurs de performance HSE (accidents, incidents)
+
+Courbes d’évolution temporelle (heures, jours, semaines, mois)
+
+Filtres avancés multi-critères
+
+Par période (jour, semaine, mois, année)
+
+Par méthode de décapage (Transport, Poussage, Casement)
+
+Par machine, opérateur, équipe, zone géographique
+
+Par état de la machine (en marche, arrêt, panne)
+
+Par utilisateur (profil, rôle)
+
+Tableaux comparatifs personnalisables
+
+Comparaison de performances entre machines et opérateurs
+
+Synthèse des indicateurs clés (KPI) avec alertes visuelles (codes couleurs)
+
+Possibilité d’exporter les données au format PDF, Excel, CSV
+
+Widgets de synthèse personnalisables
+
+KPI en temps réel (volume décapé, rendement horaire, disponibilité)
+
+Notifications et alertes critiques (ex : panne machine, dépassement seuil)
+
+Rappels des audits HSE à venir
+
+Fonction de recherche rapide
+
+Recherche instantanée dans tous les tableaux et graphiques
+
+Suggestions automatiques
+
+Performance et ergonomie
+
+Chargement asynchrone des données pour fluidité
+
+Interface responsive adaptée desktop et mobile
+
+Mode sombre / clair pour confort visuel
+
+Historique et sauvegarde des vues personnalisées
+
+Sauvegarde des filtres et tableaux préférés par utilisateur
+
+Possibilité de revenir aux données historiques 
+
+---
+
+### **4.4. Suivi des Avancements**
+
+Carte interactive des panneaux avec états d’avancement visuels (couleurs selon taux de réalisation)
+
+Suivi détaillé par zone géologique, panneau, tranche, et niveau
+
+Mise à jour automatique des profondeurs atteintes, reliée aux fiches d’intervention
+
+Comparaison Prévisionnel vs Réalisé :
+
+Progression planifiée (planning)
+
+Réalisation effective (via données terrain)
+
+Indicateurs d’alerte (retard, avance, arrêt, seuil critique)
+
+Suivi des distances parcourues par les engins de transport quotidiennement
+
+Tableaux croisés dynamiques : par méthode, machine, opérateur, date
+
+Export PDF/Excel personnalisé pour les données d’avancement 
+
+---
+
+### **4.5. Suivi des Performances Techniques**
+
+Classement dynamique des machines selon plusieurs critères :
+
+Disponibilité (heures en marche / totales)
+
+Rendement (m³/h)
+
+Nombre d’interventions par panne
+
+Fiabilité moyenne (MTBF – Mean Time Between Failures)
+
+Rapports de performance par poste et par équipe
+
+Analyse des pannes (causes fréquentes, durées moyennes d’arrêt, gravité)
+
+Visualisation des cycles de travail : machine en marche, à l’arrêt, productivité par séquence
+
+Rapports par opérateur :
+
+Taux de rendement moyen
+
+Historique des machines utilisées
+
+Productivité individuelle
+
+Historique des interventions machine avec tendance temporelle
+
+Indice de performance globale (KPI synthétique) combinant plusieurs métriques
+
+Alertes automatiques (ex : si rendement chute > 30% sur 2 jours)
+
+Export Excel/PDF automatisé par machine, période, ou équipe 
+
+---
+
+### **4.6. Sécurité & Incidents**
+
+* Déclaration d’événements sécuritaires
+* Audit HSE intégré (grilles préétablies)
+* Traçabilité des contrôles et conformité
+* Historique des anomalies par type / gravité
+
+---
+
+### **4.7. Gestion des Utilisateurs**
+
+| **Profil**     | **Droits associés**                                                |
+| -------------- | ------------------------------------------------------------------ |
+| Administrateur | Gestion complète, y compris utilisateurs et configurations système |
+| Superviseur    | Validation et édition des données, visualisation complète          |
+
+* Suivi des connexions, actions par utilisateur
+* Affectation aux sites et aux équipes
+
+---
+
+### **4.8. Archivage et Sauvegarde**
+
+* Archivage journalier des données
+* Accès à l’historique des interventions
+* Génération de rapports périodiques (PDF)
+* Données accessibles pour audits réglementaires et internes
+
+---
+
+### **4.9. Gestion de Session et Sécurité**
+
+* Authentification JWT
+* Déconnexion automatique après inactivité prolongée
+* Historique des connexions
+* Permissions granulaire par fonctionnalité et zone
+
+---
+4.10 Exportation PDF et Excel
+Objectifs :
+Permettre aux utilisateurs d’extraire facilement et précisément des rapports complets et personnalisés depuis l’application, facilitant le partage, l’archivage et l’analyse hors ligne.
+
+Fonctionnalités Clés :
+Exportation multi-format :
+
+PDF haute qualité avec mise en page professionnelle
+
+Excel (.xlsx) avec données tabulaires et formules exportées
+
+Option CSV pour compatibilité maximale
+
+Personnalisation avancée des exports :
+
+Sélection des plages de dates et filtres appliqués (méthode, machine, zone, opérateur, etc.)
+
+Choix des indicateurs et colonnes à inclure dans le rapport
+
+Configuration des en-têtes, pieds de page (ex : logo OCP, date d’export)
+
+Gestion automatique des sauts de page et des styles pour lisibilité optimale
+
+Inclusion de graphiques et visuels :
+
+Intégration directe des graphiques du tableau de bord dans le PDF
+
+Export Excel avec graphiques dynamiques liés aux données
+
+Export sécurisé et performant :
+
+Traitement en arrière-plan (backend) pour gros volumes de données
+
+Authentification et autorisations vérifiées avant export
+
+Limitation et quota d’export pour éviter surcharge système
+
+Interface utilisateur intuitive :
+
+Bouton export clair avec options avancées dans un modal/dialogue
+
+Progression et notification de fin d’export (téléchargement automatique ou lien envoyé par email)
+
+Historique des exports accessibles depuis le profil utilisateur
+
+Compatibilité multi-plateforme :
+
+Fonctionnement optimal sur desktop et mobile
+
+Fichiers conformes aux standards ouverts pour compatibilité avec tous les logiciels bureautiques 
+
+
+
+---
+
+## **5. Technologies Recommandées** 
+
+| **Composant**   | **Technologie**            |
+| --------------- | -------------------------- |
+| Backend         | Express.js(Node.js)        |
+| Frontend        | React.js avec Tailwind CSS |
+| Base de données | MySQL                      |
+| Visualisation   | Chart.js                   |
+
+---
+
+## **6. Contraintes Techniques et Normatives** 
+
+| **Catégorie** | **Exigence**                                               |
+| ------------- | ---------------------------------------------------------- |
+| Sécurité      | HTTPS, chiffrement des données, audit trail complet        |
+| Ergonomie     | Interface sobre, intuitive et rapide                       |
+| Scalabilité   | Architecture modulaire pour ajout futur de modules métiers |
+
+---
+
+## **7. Conclusion** 
+
+Ce cahier des charges incarne une démarche de transformation digitale ambitieuse, visant à propulser les opérations de décapage de l’OCP vers un modèle d'excellence opérationnelle. L’application visée allie **fiabilité, interopérabilité, sécurité et performance**, tout en s’inscrivant pleinement dans les exigences stratégiques et industrielles de l’entreprise.
