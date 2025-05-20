@@ -318,7 +318,13 @@ export class MemStorage implements IStorage {
   
   async createMachine(machine: InsertMachine): Promise<Machine> {
     const id = this.machineIdCounter++;
-    const newMachine: Machine = { ...machine, id };
+    const newMachine: Machine = { 
+      ...machine, 
+      id,
+      specifications: machine.specifications || null,
+      currentState: machine.currentState || null,
+      isActive: machine.isActive ?? null
+    };
     this.machines.set(id, newMachine);
     return newMachine;
   }
@@ -356,7 +362,9 @@ export class MemStorage implements IStorage {
     const newOperation: Operation = { 
       ...operation, 
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      observations: operation.observations || null,
+      interventionType: operation.interventionType || null
     };
     this.operations.set(id, newOperation);
     
@@ -536,7 +544,10 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(),
       logoutTime: null,
-      sessionDuration: null
+      sessionDuration: null,
+      status: log.status || 'success',
+      ipAddress: log.ipAddress || null,
+      userAgent: log.userAgent || null
     };
     this.connectionLogs.set(id, newLog);
     
