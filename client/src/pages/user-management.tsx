@@ -119,31 +119,31 @@ export default function UserManagement() {
   const isAdmin = user?.role === "admin";
 
   // Queries
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
     enabled: isAdmin,
     retry: false
   });
 
-  const { data: connectionLogs, isLoading: isLoadingLogs } = useQuery({
+  const { data: connectionLogs = [], isLoading: isLoadingLogs } = useQuery<ConnectionLog[]>({
     queryKey: ["/api/connection-logs"],
     enabled: isAdmin && activeTab === "connexions",
     retry: false
   });
 
-  const { data: activities, isLoading: isLoadingActivities } = useQuery({
+  const { data: activities = [], isLoading: isLoadingActivities } = useQuery<Activity[]>({
     queryKey: ["/api/activities"],
     enabled: activeTab === "activites",
     retry: false
   });
 
-  const { data: userActivities, isLoading: isLoadingUserActivities } = useQuery({
+  const { data: userActivities = [], isLoading: isLoadingUserActivities } = useQuery<Activity[]>({
     queryKey: ["/api/users", selectedUserId, "activities"],
     enabled: !!selectedUserId && activeTab === "activites",
     retry: false
   });
 
-  const { data: userLogs, isLoading: isLoadingUserLogs } = useQuery({
+  const { data: userLogs = [], isLoading: isLoadingUserLogs } = useQuery<ConnectionLog[]>({
     queryKey: ["/api/users", selectedUserId, "connection-logs"],
     enabled: !!selectedUserId && activeTab === "connexions",
     retry: false
