@@ -468,8 +468,8 @@ export default function UserManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users && users.length > 0 ? (
-                      users.map((user: User) => (
+                    {users.length > 0 ? (
+                      users.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.name}</TableCell>
                           <TableCell>{user.username}</TableCell>
@@ -668,7 +668,7 @@ export default function UserManagement() {
                 <h3 className="text-lg font-medium">
                   {selectedUserId ? (
                     <>
-                      Connexions de {users?.find((u: User) => u.id === selectedUserId)?.name}
+                      Connexions de {users.find(u => u.id === selectedUserId)?.name}
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -702,7 +702,7 @@ export default function UserManagement() {
                   </TableHeader>
                   <TableBody>
                     {selectedUserId 
-                      ? (userLogs && userLogs.length > 0 ? userLogs.map((log: ConnectionLog) => (
+                      ? (userLogs.length > 0 ? userLogs.map((log) => (
                         <LogRow key={log.id} log={log} users={users} />
                       )) : (
                         <TableRow>
@@ -711,7 +711,7 @@ export default function UserManagement() {
                           </TableCell>
                         </TableRow>
                       ))
-                      : (connectionLogs && connectionLogs.length > 0 ? connectionLogs.map((log: ConnectionLog) => (
+                      : (connectionLogs.length > 0 ? connectionLogs.map((log) => (
                         <LogRow key={log.id} log={log} users={users} />
                       )) : (
                         <TableRow>
@@ -732,7 +732,7 @@ export default function UserManagement() {
                 <h3 className="text-lg font-medium">
                   {selectedUserId ? (
                     <>
-                      Activités de {users?.find((u: User) => u.id === selectedUserId)?.name}
+                      Activités de {users.find(u => u.id === selectedUserId)?.name}
                       <Button 
                         variant="ghost" 
                         size="sm" 
