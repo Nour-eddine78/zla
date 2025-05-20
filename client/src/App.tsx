@@ -11,6 +11,7 @@ import OperationsForm from "@/pages/operations-form";
 import Performance from "@/pages/performance";
 import Safety from "@/pages/safety";
 import Advancement from "@/pages/advancement";
+import UserManagement from "@/pages/user-management";
 import { useAuth } from "@/hooks/use-auth";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
@@ -73,6 +74,9 @@ function Router() {
       </Route>
       <Route path="/advancement">
         <ProtectedRoute component={Advancement} />
+      </Route>
+      <Route path="/user-management">
+        <ProtectedRoute component={UserManagement} />
       </Route>
       <Route component={NotFound} />
     </Switch>

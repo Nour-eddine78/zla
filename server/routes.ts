@@ -10,7 +10,8 @@ import {
   insertOperationSchema,
   insertSafetyIncidentSchema,
   insertDocumentSchema,
-  insertActivitySchema
+  insertActivitySchema,
+  insertConnectionLogSchema
 } from "@shared/schema";
 
 // JWT Secret
@@ -400,11 +401,268 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // User Management routes
+  app.get("/api/users", authenticateToken, async (req: any, res) => {
+    try {
+      // Only admin can list all users
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const users = await storage.getUsers();
+      
+      // Remove sensitive information (password)
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        lastLogin: user.lastLogin
+      }));
+      
+      return res.status(200).json(sanitizedUsers);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.get("/api/users/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Only admin or the user themselves can view user details
+      if (req.user.role !== 'admin' && req.user.id !== id) {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Remove sensitive information (password)
+      const sanitizedUser = {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        lastLogin: user.lastLogin
+      };
+      
+      return res.status(200).json(sanitizedUser);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.post("/api/users", authenticateToken, async (req: any, res) => {
+    try {
+      // Only admin can create users
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const validation = insertUserSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid user data", errors: validation.error.format() });
+      }
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(validation.data.username);
+      if (existingUser) {
+        return res.status(409).json({ message: "Username already exists" });
+      }
+      
+      // For a real app, hash password
+      let userData = validation.data;
+      
+      // Create user
+      const user = await storage.createUser(userData);
+      
+      // Remove sensitive information
+      const sanitizedUser = {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role
+      };
+      
+      // Log connection
+      await storage.createConnectionLog({
+        userId: req.user.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        status: 'user_created'
+      });
+      
+      return res.status(201).json(sanitizedUser);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.patch("/api/users/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Only admin or the user themselves can update their profile
+      // But normal users cannot change their role
+      if (req.user.role !== 'admin' && (req.user.id !== id || req.body.role)) {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Don't allow changing username if it already exists
+      if (req.body.username && req.body.username !== user.username) {
+        const existingUser = await storage.getUserByUsername(req.body.username);
+        if (existingUser) {
+          return res.status(409).json({ message: "Username already exists" });
+        }
+      }
+      
+      // If password is being updated, hash it
+      let userData = { ...req.body };
+      
+      const updatedUser = await storage.updateUser(id, userData);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user" });
+      }
+      
+      // Remove sensitive information
+      const sanitizedUser = {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        lastLogin: updatedUser.lastLogin
+      };
+      
+      return res.status(200).json(sanitizedUser);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.delete("/api/users/:id", authenticateToken, async (req: any, res) => {
+    try {
+      // Only admin can delete users
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Prevent deleting yourself
+      if (req.user.id === id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      const deleted = await storage.deleteUser(id);
+      
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete user" });
+      }
+      
+      return res.status(200).json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Connection logs routes
+  app.get("/api/connection-logs", authenticateToken, async (req: any, res) => {
+    try {
+      // Only admin can view all connection logs
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const logs = await storage.getConnectionLogs(limit);
+      
+      return res.status(200).json(logs);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.get("/api/users/:id/connection-logs", authenticateToken, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Only admin or the user themselves can view their connection logs
+      if (req.user.role !== 'admin' && req.user.id !== id) {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const logs = await storage.getConnectionLogsByUser(id, limit);
+      
+      return res.status(200).json(logs);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   // Activities routes
   app.get("/api/activities", authenticateToken, async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const activities = await storage.getActivities(limit);
+      return res.status(200).json(activities);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.get("/api/users/:id/activities", authenticateToken, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Only admin or the user themselves can view their activities
+      if (req.user.role !== 'admin' && req.user.id !== id) {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const activities = await storage.getActivitiesByUser(id, limit);
+      
       return res.status(200).json(activities);
     } catch (error) {
       console.error(error);
