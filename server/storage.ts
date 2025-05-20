@@ -86,7 +86,7 @@ export class MemStorage implements IStorage {
     // Initialize with default admin user
     this.createUser({
       username: "admin",
-      password: "$2b$10$dWV1xRXpzVbw0u1QCTjIIejnBD3eBcaiRrEOr.9uab3r87JlNJ2bK", // password: admin123
+      password: "admin123", // Plain text for demo
       name: "Administrator",
       role: "admin"
     });
@@ -94,7 +94,7 @@ export class MemStorage implements IStorage {
     // Initialize with a supervisor user
     this.createUser({
       username: "supervisor",
-      password: "$2b$10$dWV1xRXpzVbw0u1QCTjIIejnBD3eBcaiRrEOr.9uab3r87JlNJ2bK", // password: admin123
+      password: "admin123", // Plain text for demo
       name: "Ahmed Bouhmidi",
       role: "supervisor"
     });
