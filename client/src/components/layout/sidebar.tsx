@@ -20,7 +20,7 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   

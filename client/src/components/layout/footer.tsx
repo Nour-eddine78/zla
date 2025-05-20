@@ -9,14 +9,14 @@ export default function Footer() {
             <p className="text-sm text-gray-600 dark:text-gray-300">© 2025 OCP - Office Chérifien des Phosphates. Tous droits réservés.</p>
           </div>
           <div className="flex space-x-4">
-            <Link href="#">
-              <a className="text-gray-500 dark:text-gray-400 hover:text-primary">Assistance</a>
+            <Link href="/support">
+              <div className="text-gray-500 dark:text-gray-400 hover:text-primary cursor-pointer">Assistance</div>
             </Link>
-            <Link href="#">
-              <a className="text-gray-500 dark:text-gray-400 hover:text-primary">Documentation</a>
+            <Link href="/documentation">
+              <div className="text-gray-500 dark:text-gray-400 hover:text-primary cursor-pointer">Documentation</div>
             </Link>
-            <Link href="#">
-              <a className="text-gray-500 dark:text-gray-400 hover:text-primary">Politique de confidentialité</a>
+            <Link href="/privacy">
+              <div className="text-gray-500 dark:text-gray-400 hover:text-primary cursor-pointer">Politique de confidentialité</div>
             </Link>
           </div>
         </div>
