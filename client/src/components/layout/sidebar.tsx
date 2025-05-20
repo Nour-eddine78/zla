@@ -1,14 +1,17 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   ChevronLeft, 
+  ChevronDown,
   Home, 
   ClipboardList, 
   BarChart2, 
   Map, 
   Activity, 
-  AlertTriangle 
+  AlertTriangle,
+  FileText
 } from "lucide-react";
 
 type SidebarProps = {
@@ -19,6 +22,7 @@ type SidebarProps = {
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
   const sidebarItems = [
     {
@@ -30,26 +34,61 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       title: "Suivi des Opérations",
       href: "/operations",
       icon: ClipboardList,
+      subItems: [
+        { title: "Liste des Opérations", href: "/operations" },
+        { title: "Nouvelle Opération", href: "/operations-form" },
+        { title: "Historique", href: "/operations/history" }
+      ]
     },
     {
       title: "Tableau de Bord",
-      href: "/performance",
+      href: "/dashboard",
       icon: BarChart2,
+      subItems: [
+        { title: "Vue Générale", href: "/dashboard" },
+        { title: "Statistiques", href: "/dashboard/stats" },
+        { title: "Rapports", href: "/dashboard/reports" }
+      ]
     },
     {
       title: "Avancement",
       href: "/advancement",
       icon: Map,
+      subItems: [
+        { title: "Par Panneau", href: "/advancement/panel" },
+        { title: "Par Niveau", href: "/advancement/level" },
+        { title: "Planification", href: "/advancement/planning" }
+      ]
     },
     {
       title: "Performances",
       href: "/performance",
       icon: Activity,
+      subItems: [
+        { title: "Machines", href: "/performance/machines" },
+        { title: "Opérateurs", href: "/performance/operators" },
+        { title: "Méthodes", href: "/performance/methods" }
+      ]
     },
     {
       title: "Sécurité",
       href: "/safety",
       icon: AlertTriangle,
+      subItems: [
+        { title: "Incidents", href: "/safety" },
+        { title: "Rapports HSE", href: "/safety/reports" },
+        { title: "Procédures", href: "/safety/procedures" }
+      ]
+    },
+    {
+      title: "Documentation",
+      href: "/documentation",
+      icon: ClipboardList,
+      subItems: [
+        { title: "Machines", href: "/documentation/machines" },
+        { title: "Méthodes", href: "/documentation/methods" },
+        { title: "Fiches Techniques", href: "/documentation/technical" }
+      ]
     },
   ];
   
@@ -80,21 +119,66 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-2">
-          {sidebarItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <a
-                className={cn(
-                  "group flex items-center px-2 py-2 text-sm font-medium rounded-md",
-                  location === item.href
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          {sidebarItems.map((item) => {
+            const isActive = location === item.href || 
+              (item.subItems && item.subItems.some(sub => location === sub.href));
+            const isExpanded = expandedItems[item.href] || false;
+            
+            return (
+              <div key={item.href} className="mb-1">
+                <div
+                  className={cn(
+                    "group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md cursor-pointer",
+                    isActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                  onClick={() => {
+                    if (item.subItems) {
+                      setExpandedItems(prev => ({
+                        ...prev,
+                        [item.href]: !prev[item.href]
+                      }));
+                    } else {
+                      setLocation(item.href);
+                    }
+                  }}
+                >
+                  <div className="flex items-center">
+                    <item.icon className="mr-3 flex-shrink-0 h-5 w-5" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </div>
+                  {!collapsed && item.subItems && (
+                    <ChevronDown 
+                      className={cn(
+                        "h-4 w-4 transition-transform", 
+                        isExpanded ? "transform rotate-180" : ""
+                      )} 
+                    />
+                  )}
+                </div>
+                
+                {!collapsed && item.subItems && isExpanded && (
+                  <div className="pl-9 mt-1 space-y-1">
+                    {item.subItems.map(subItem => (
+                      <Link key={subItem.href} href={subItem.href}>
+                        <div
+                          className={cn(
+                            "block py-1.5 px-2 text-sm rounded-md cursor-pointer",
+                            location === subItem.href
+                              ? "bg-sidebar-accent/50 text-sidebar-primary-foreground"
+                              : "text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                          )}
+                        >
+                          {subItem.title}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 )}
-              >
-                <item.icon className="mr-3 flex-shrink-0 h-5 w-5" />
-                {!collapsed && <span>{item.title}</span>}
-              </a>
-            </Link>
-          ))}
+              </div>
+            );
+          })}
         </nav>
       </div>
       
